@@ -1,0 +1,6 @@
+{
+    "name": "Home Assistant Backup Status Card",
+    "render_readme": true,
+    "content_in_root": false,
+    "filename": "ha_backup_status_card.js"
+}
