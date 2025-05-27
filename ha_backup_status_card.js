@@ -6,31 +6,34 @@ class TritonnetBackupStatusCard extends HTMLElement {
         .backup-table {
           width: 100%;
           border-collapse: collapse;
-          font-family: 'Segoe UI', sans-serif;
+          font-family: 'Roboto', sans-serif;
           font-size: 12px;
           background-color: #1e1e1e;
-          color: #cccccc;
+          color: #d4d4d4;
         }
         .backup-table th, .backup-table td {
           border: 1px solid #333;
-          padding: 6px 10px;
-          text-align: left;
+          padding: 4px 8px;
           white-space: nowrap;
-        }
-        .backup-table th.group-header {
-          text-align: center;
-          background-color: #2a2a2a;
         }
         .backup-table th {
           background-color: #2a2a2a;
+          text-align: center;
+        }
+        .group-header {
+          background-color: #2a2a2a;
+          text-align: center;
         }
         .status-icon {
           font-size: 1.2em;
+          display: flex;
+          justify-content: center;
         }
         .status-running { color: #f0ad4e; }
         .status-run_success, .status-upload_success, .status-completed { color: #5cb85c; }
         .status-run_failed, .status-upload_failed, .status-cleanup_failed { color: #d9534f; }
         .status-uploading, .status-cleaningup { color: #5bc0de; }
+        .stale-time { color: #ff6b6b; }
       `;
 
             const card = document.createElement("ha-card");
@@ -40,6 +43,8 @@ class TritonnetBackupStatusCard extends HTMLElement {
             card.appendChild(this.content);
             this.appendChild(card);
         }
+
+        const MAX_AGE_HOURS = 25;
 
         const config = this._config;
 
@@ -59,22 +64,34 @@ class TritonnetBackupStatusCard extends HTMLElement {
             return `<ha-icon icon="${icon}" class="status-icon status-${status}"></ha-icon>`;
         };
 
+        const now = new Date();
         const rows = config.backups.map(backup => {
-            const lastRun = hass.states["input_datetime." + backup.last_run_entity_id]?.state || "Unknown";
+            const lastRunRaw = hass.states["input_datetime." + backup.last_run_entity_id]?.state || "Unknown";
             const status = hass.states["input_text." + backup.status_entity_id]?.state || "unknown";
-
             const runDuration = parseInt(hass.states["input_number." + backup.duration_entity_id]?.state || "0");
             const uploadDuration = parseInt(hass.states["input_number." + backup.upload_duration_entity_id]?.state || "0");
             const cleanupDuration = parseInt(hass.states["input_number." + backup.cleanup_duration_entity_id]?.state || "0");
 
+            let lastRunDisplay = lastRunRaw;
+            let isStale = false;
+
+            if (lastRunRaw && lastRunRaw !== "Unknown") {
+                const lastRunDate = new Date(lastRunRaw);
+                const ageMs = now - lastRunDate;
+                const ageHours = ageMs / (1000 * 60 * 60);
+                if (ageHours > MAX_AGE_HOURS) {
+                    isStale = true;
+                }
+            }
+
             return `
         <tr>
-          <td>${backup.title}</td>
-          <td>${lastRun}</td>
-          <td>${statusIcon(status)}</td>
-          <td>${runDuration}ms</td>
-          <td>${uploadDuration}ms</td>
-          <td>${cleanupDuration}ms</td>
+          <td style="text-align: left;">${backup.title}</td>
+          <td class="${isStale ? "stale-time" : ""}" style="text-align: center;">${lastRunDisplay}</td>
+          <td style="text-align: center;">${statusIcon(status)}</td>
+          <td style="text-align: center;">${runDuration}ms</td>
+          <td style="text-align: center;">${uploadDuration}ms</td>
+          <td style="text-align: center;">${cleanupDuration}ms</td>
         </tr>
       `;
         }).join("");
