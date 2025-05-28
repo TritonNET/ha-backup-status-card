@@ -6,7 +6,7 @@ class TritonnetBackupStatusCard extends HTMLElement {
         .backup-table {
           width: 100%;
           border-collapse: collapse;
-          font-family: 'Roboto', sans-serif;
+          font-family: Inter, Helvetica, Arial, sans-serif;
           font-size: 12px;
           background-color: #1e1e1e;
           color: #d4d4d4;
@@ -17,12 +17,15 @@ class TritonnetBackupStatusCard extends HTMLElement {
           white-space: nowrap;
         }
         .backup-table th {
-          background-color: #2a2a2a;
+          background-color: #181A1E;
           text-align: center;
         }
         .group-header {
-          background-color: #2a2a2a;
+          background-color: #181A1E;
           text-align: center;
+        }
+        .backup-table tbody tr {
+          background-color: #212326;
         }
         .status-icon {
           font-size: 1.2em;
@@ -45,8 +48,16 @@ class TritonnetBackupStatusCard extends HTMLElement {
         }
 
         const MAX_AGE_HOURS = 25;
-
         const config = this._config;
+
+        const formatDuration = (ms) => {
+            if (ms < 1000) return `${ms}ms`;
+            if (ms < 60000) return `${Math.floor(ms / 1000)}s ${ms % 1000}ms`;
+            const min = Math.floor(ms / 60000);
+            const sec = Math.floor((ms % 60000) / 1000);
+            const remMs = ms % 1000;
+            return `${min}m ${sec}s ${remMs}ms`;
+        };
 
         const statusIcon = (status) => {
             const iconMap = {
@@ -89,9 +100,9 @@ class TritonnetBackupStatusCard extends HTMLElement {
           <td style="text-align: left;">${backup.title}</td>
           <td class="${isStale ? "stale-time" : ""}" style="text-align: center;">${lastRunDisplay}</td>
           <td style="text-align: center;">${statusIcon(status)}</td>
-          <td style="text-align: center;">${runDuration}ms</td>
-          <td style="text-align: center;">${uploadDuration}ms</td>
-          <td style="text-align: center;">${cleanupDuration}ms</td>
+          <td style="text-align: center;">${formatDuration(runDuration)}</td>
+          <td style="text-align: center;">${formatDuration(uploadDuration)}</td>
+          <td style="text-align: center;">${formatDuration(cleanupDuration)}</td>
         </tr>
       `;
         }).join("");
