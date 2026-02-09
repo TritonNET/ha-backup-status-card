@@ -59,6 +59,14 @@ class TritonnetBackupStatusCard extends HTMLElement {
             return `${min}m ${sec}s ${remMs}ms`;
         };
 
+        const formatBytes = (bytes) => {
+            if (bytes === 0 || isNaN(bytes)) return "0 B";
+            const k = 1024;
+            const sizes = ["B", "KB", "MB", "GB", "TB"];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+        };
+
         const statusIcon = (status) => {
             const iconMap = {
                 "running": "mdi:progress-clock",
@@ -82,6 +90,7 @@ class TritonnetBackupStatusCard extends HTMLElement {
             const runDuration = parseInt(hass.states["input_number." + backup.duration_entity_id]?.state || "0");
             const uploadDuration = parseInt(hass.states["input_number." + backup.upload_duration_entity_id]?.state || "0");
             const cleanupDuration = parseInt(hass.states["input_number." + backup.cleanup_duration_entity_id]?.state || "0");
+            const archiveSizeBytes = parseInt(hass.states["input_number." + backup.archive_size_entity_id]?.state || "0");
 
             let lastRunDisplay = lastRunRaw;
             let isStale = false;
@@ -103,6 +112,7 @@ class TritonnetBackupStatusCard extends HTMLElement {
           <td style="text-align: center;">${formatDuration(runDuration)}</td>
           <td style="text-align: center;">${formatDuration(uploadDuration)}</td>
           <td style="text-align: center;">${formatDuration(cleanupDuration)}</td>
+          <td style="text-align: center;">${formatBytes(archiveSizeBytes)}</td>
         </tr>
       `;
         }).join("");
@@ -115,6 +125,7 @@ class TritonnetBackupStatusCard extends HTMLElement {
             <th rowspan="2">Last Run</th>
             <th rowspan="2">Status</th>
             <th class="group-header" colspan="3">Duration</th>
+            <th rowspan="2">Size</th>
           </tr>
           <tr>
             <th>Run</th>

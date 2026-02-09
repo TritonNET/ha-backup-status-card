@@ -1,0 +1,58 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Release Type'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+          - minor
+          - major
+
+permissions:
+  contents: write
+  actions: write  # Needed for renaming the run
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate Next Version
+        id: version
+        run: |
+          # Get latest tag or default to v0.0
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0")
+          VERSION=${LATEST_TAG#v}
+          IFS='.' read -r -a parts <<< "$VERSION"
+          MAJOR=${parts[0]:-0}
+          MINOR=${parts[1]:-0}
+
+          if [ "${{ inputs.version_type }}" == "major" ]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+          else
+            MINOR=$((MINOR + 1))
+          fi
+          
+          NEW_TAG="v$MAJOR.$MINOR"
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "Calculated new version: $NEW_TAG"
+          
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # We explicitly specify ONLY the .js file to exclude index.html
+          gh release create ${{ steps.version.outputs.new_tag }} \
+            --generate-notes \
+            --title "${{ steps.version.outputs.new_tag }}" \
+            --target "${{ github.sha }}" \
+            tritonnet-number-card.js
