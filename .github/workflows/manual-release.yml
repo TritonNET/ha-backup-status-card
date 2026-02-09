@@ -50,9 +50,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # We explicitly specify ONLY the .js file to exclude index.html
           gh release create ${{ steps.version.outputs.new_tag }} \
             --generate-notes \
             --title "${{ steps.version.outputs.new_tag }}" \
             --target "${{ github.sha }}" \
-            tritonnet-number-card.js
+            ha_backup_status_card.js
