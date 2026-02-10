@@ -16,9 +16,10 @@ class TritonnetBackupStatusCard extends HTMLElement {
           padding: 4px 8px;
           white-space: nowrap;
         }
-        .backup-table th {
+        .backup-table th, .total-row {
           background-color: #181A1E;
           text-align: center;
+          font-weight: bold;
         }
         .group-header {
           background-color: #181A1E;
@@ -84,6 +85,13 @@ class TritonnetBackupStatusCard extends HTMLElement {
         };
 
         const now = new Date();
+
+        // Accumulators for totals
+        let totalRun = 0;
+        let totalUpload = 0;
+        let totalCleanup = 0;
+        let totalBytes = 0;
+
         const rows = config.backups.map(backup => {
             const lastRunRaw = hass.states["input_datetime." + backup.last_run_entity_id]?.state || "Unknown";
             const status = hass.states["input_text." + backup.status_entity_id]?.state || "unknown";
@@ -91,6 +99,12 @@ class TritonnetBackupStatusCard extends HTMLElement {
             const uploadDuration = parseInt(hass.states["input_number." + backup.upload_duration_entity_id]?.state || "0");
             const cleanupDuration = parseInt(hass.states["input_number." + backup.cleanup_duration_entity_id]?.state || "0");
             const archiveSizeBytes = parseInt(hass.states["input_number." + backup.archive_size_entity_id]?.state || "0");
+
+            // Add to totals
+            totalRun += runDuration;
+            totalUpload += uploadDuration;
+            totalCleanup += cleanupDuration;
+            totalBytes += archiveSizeBytes;
 
             let lastRunDisplay = lastRunRaw;
             let isStale = false;
@@ -135,6 +149,13 @@ class TritonnetBackupStatusCard extends HTMLElement {
         </thead>
         <tbody>
           ${rows}
+          <tr class="total-row">
+            <td colspan="3" style="text-align: right; padding-right: 15px;">Total</td>
+            <td>${formatDuration(totalRun)}</td>
+            <td>${formatDuration(totalUpload)}</td>
+            <td>${formatDuration(totalCleanup)}</td>
+            <td>${formatBytes(totalBytes)}</td>
+          </tr>
         </tbody>
       </table>
     `;
